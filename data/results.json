@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "updated": "2026-10-11",
+    "repo": "https://github.com/VedantShuklaaa/lobster",
+    "workload": "1,000,000 commands, seed 42"
+  },
+  "versions": [
+    { "id": "v1",   "name": "BTreeMap + VecDeque",                        "mops": 21.8, "meanNs": 46 },
+    { "id": "v1.1", "name": "Fast hasher, index sized to workload",       "mops": 28.0, "meanNs": 36 },
+    { "id": "v2",   "name": "Slab + intrusive level lists (O(1) cancel)", "mops": 32.5, "meanNs": 31 },
+    { "id": "v3",   "name": "Caller-provided event buffer",               "mops": 48.0, "meanNs": 21 },
+    { "id": "v4",   "name": "Array-indexed price levels",                 "mops": 98.7, "meanNs": 10 },
+    { "id": "v5",   "name": "Occupancy bitmap for best-price advance",    "mops": 96.5, "meanNs": 10 }
+  ],
+  "stress": [
+    {
+      "preset": "narrow",
+      "shape": "~5-9k resting orders, ~1.2k tick range",
+      "v4": 93.2,
+      "v5": 89.8,
+      "note": "The bitmap costs a bit set or clear whenever a level fills or empties, on a workload that never had a scan problem: about -4%."
+    },
+    {
+      "preset": "wide",
+      "shape": "~19k resting orders, ~61k tick range",
+      "v4": 63.1,
+      "v5": 68.4,
+      "note": "Footprint stress: the whole ladder is touched. Still 0.76x of narrow. The profile points at cache misses in Slab::unlink, but that has not been isolated."
+    },
+    {
+      "preset": "sparse",
+      "shape": "~70 resting orders, ~61k tick range",
+      "v4": 52.7,
+      "v5": 93.2,
+      "note": "v4 scanned long empty gaps between levels (worst case 15.3 µs). The bitmap cut the worst-case scan to 0.01 µs."
+    },
+    {
+      "preset": "bursty",
+      "shape": "~4-9k resting orders, ~1.2k tick range, clustered stream",
+      "v4": null,
+      "v5": 118.8,
+      "note": "Same type mix as narrow, but runs of same-type commands. 1.31x narrow; about three quarters of that gap is branch prediction."
+    }
+  ],
+  "pipeline": {
+    "envId": "c5",
+    "workload": "narrow, 1M commands, median of 5 runs",
+    "saturationMops": 6.3,
+    "pinned": [
+      { "offered": 0.5,  "achieved": 0.50, "p50": 470, "p90": 657, "p99": 3482, "p999": 13187, "max": 76077 },
+      { "offered": 1.0,  "achieved": 1.00, "p50": 440, "p90": 625, "p99": 3615, "p999": 13522, "max": 75775 },
+      { "offered": 2.0,  "achieved": 2.00, "p50": 393, "p90": 557, "p99": 4445, "p999": 13795, "max": 16599 },
+      { "offered": 5.0,  "achieved": 5.00, "p50": 466, "p90": 727, "p99": 7046, "p999": 15204, "max": 16885 },
+      { "offered": 10.0, "achieved": 6.29, "saturated": true },
+      { "offered": 15.0, "achieved": 6.25, "saturated": true },
+      { "offered": 20.0, "achieved": 6.18, "saturated": true }
+    ],
+    "unpinned": [
+      { "offered": 0.5,  "achieved": 0.50, "p50": 427, "p90": 538, "p99": 3279, "p999": 13156, "max": 74313 },
+      { "offered": 1.0,  "achieved": 1.00, "p50": 408, "p90": 520, "p99": 3766, "p999": 13458, "max": 69932 },
+      { "offered": 2.0,  "achieved": 2.00, "p50": 425, "p90": 561, "p99": 4878, "p999": 13790, "max": 20015 },
+      { "offered": 5.0,  "achieved": 5.00, "p50": 488, "p90": 768, "p99": 7126, "p999": 14996, "max": 18656 },
+      { "offered": 10.0, "achieved": 6.32, "saturated": true },
+      { "offered": 15.0, "achieved": 6.31, "saturated": true },
+      { "offered": 20.0, "achieved": 6.31, "saturated": true }
+    ]
+  },
+  "environments": [
+    {
+      "id": "m5",
+      "name": "Apple M5 MacBook Air",
+      "detail": "macOS, 16 GB, plugged in",
+      "usedFor": "Engine versions and stress workloads",
+      "caveat": "No hard core pinning on Apple Silicon. The timer tick is about 42 ns."
+    },
+    {
+      "id": "c5",
+      "name": "AWS EC2 c5.xlarge",
+      "detail": "ap-south-1, Ubuntu 24.04, kernel 7.0.0-1014-aws, Xeon Platinum 8275CL @ 3.0 GHz, 4 vCPU (2 cores x 2 threads)",
+      "usedFor": "Pipeline latency",
+      "caveat": "Non-burstable VM, no isolated cores. Threads pinned to CPUs 0 and 1, which sit on different physical cores."
+    }
+  ],
+  "limits": [
+    "All workloads are synthetic. The generated stream draws command types i.i.d., which is harsher on branch prediction than a real feed.",
+    "Prices must fit the configured ladder size (65,536 ticks by default).",
+    "Single instrument, single engine thread, no persistence or networking.",
+    "Pipeline latency uses batch 1, because a latency measurement cannot batch. The p99.9 and max tails are nearly identical pinned and unpinned, and their cause has not been isolated.",
+    "Numbers from different machines are never compared in one table."
+  ]
+}

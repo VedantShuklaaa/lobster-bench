@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# lobster-web
 
-## Getting Started
+The benchmarks page for [lobster](https://github.com/VedantShuklaaa/lobster), a limit order book matching engine in Rust. One static page: version-by-version throughput, stress workloads, and pinned-core pipeline latency.
 
-First, run the development server:
+Black and white only. Next.js (App Router), TypeScript, Tailwind CSS, Framer Motion.
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # production build (the page is fully static)
+npm run typecheck
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+app/                  layout, page, globals.css, icon
+components/
+  layout/             Nav (scroll-progress line), Footer
+  ui/                 Reveal, CountUp, Bar, Segmented, Section
+  sections/           Hero, LiveBook, Evolution, Stress, Pipeline, Method
+lib/                  results.ts (types and loader), format.ts
+data/results.json     the only place numbers live
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Updating the numbers
 
-## Learn More
+Every figure on the page comes from `data/results.json`. Edit it, commit, and Vercel redeploys.
 
-To learn more about Next.js, take a look at the following resources:
+* `versions`: replay throughput per engine version (M ops/s, mean ns/op)
+* `stress`: v4 and v5 throughput per workload preset (`v4: null` when not measured)
+* `pipeline`: latency percentiles in ns per offered rate, pinned and unpinned. Rows with `"saturated": true` show a "saturated" panel instead of bars, because their latency is queue growth.
+* `environments`: the machines the numbers came from. Results from different machines are never mixed in one table.
+* `limits`: the known-limits list
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The hero order book is decorative and labelled "illustrative". It is not live data.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploy
 
-## Deploy on Vercel
+Import the repo in Vercel. Leave Root Directory empty. The framework is auto-detected and no environment variables are needed.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Design rules
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* Colors are black, white, and white at reduced opacity (`text-white/60`, `border-white/15`). No other hues.
+* Motion goes through Framer Motion and respects `prefers-reduced-motion`.
+* One component per file, and sections stay thin: shared pieces live in `components/ui`.
