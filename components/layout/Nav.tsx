@@ -30,6 +30,11 @@ export function Nav() {
             </li>
           ))}
           <li>
+            <a href="/live" className="rounded-full bg-white px-3 py-1 text-xs font-medium text-black transition-opacity hover:opacity-80">
+              Live
+            </a>
+          </li>
+          <li>
             <a
               href={results.meta.repo}
               target="_blank"

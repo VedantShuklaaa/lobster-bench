@@ -4,6 +4,10 @@
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* Only used on /live: buy/up is green, sell/down is red. Muted, never full saturation. */
+  --color-up: #3fb983;
+  --color-down: #e5575b;
 }
 
 :root {
@@ -39,3 +43,21 @@ body {
     scroll-behavior: auto;
   }
 }
+
+/* /live: a book row flashes white for a moment when its size changes. */
+@keyframes flash-up {
+  from { background-color: rgb(255 255 255 / 0.12); }
+  to { background-color: transparent; }
+}
+@keyframes flash-down {
+  from { background-color: rgb(255 255 255 / 0.12); }
+  to { background-color: transparent; }
+}
+.flash-up { animation: flash-up 0.35s ease-out; }
+.flash-down { animation: flash-down 0.35s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-up, .flash-down { animation: none; }
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
