@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { epicPro, times } from "@/fonts/fonts";
 
 export const metadata: Metadata = {
   title: "lobster: a limit order book engine in Rust",
@@ -13,7 +14,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${epicPro.className} ${times.className}`}>
       <body>{children}</body>
     </html>
   );

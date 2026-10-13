@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useScroll, useSpring } from "framer-motion";
+import Link from "next/link";
 import { results } from "@/lib/results";
 
 const links = [
@@ -30,9 +31,9 @@ export function Nav() {
             </li>
           ))}
           <li>
-            <a href="/live" className="rounded-full bg-white px-3 py-1 text-xs font-medium text-black transition-opacity hover:opacity-80">
+            <Link href="/live" className="rounded-full bg-white px-3 py-1 text-xs font-medium text-black transition-opacity hover:opacity-80">
               Live
-            </a>
+            </Link>
           </li>
           <li>
             <a
