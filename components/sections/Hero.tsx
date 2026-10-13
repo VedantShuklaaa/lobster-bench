@@ -10,7 +10,7 @@ function Stat({ value, label }: { value: React.ReactNode; label: string }) {
   return (
     <div>
       <div className="text-3xl font-semibold tracking-tight tabular-nums md:text-4xl">{value}</div>
-      <div className="mt-1 max-w-[16rem] text-xs leading-relaxed text-white/50">{label}</div>
+      <div className="mt-1 max-w-[16rem] text-xs leading-[1.2] text-white/50">{label}</div>
     </div>
   );
 }
@@ -35,11 +35,11 @@ export function Hero() {
           </motion.p>
           <motion.h1
             {...fade(0.1)}
-            className="mt-6 text-6xl font-semibold tracking-tighter md:text-8xl"
+            className="mt-6 text-6xl font-semibold font-[times] md:text-8xl"
           >
             lobster
           </motion.h1>
-          <motion.p {...fade(0.2)} className="mt-6 max-w-md text-lg leading-relaxed text-white/60">
+          <motion.p {...fade(0.2)} className="mt-6 max-w-md text-lg leading-[1.1] text-white/60">
             Built to explore low-latency design: cache-friendly structures, an allocation-free hot path, and
             honest measurement. Every number here is a replay you can rerun.
           </motion.p>

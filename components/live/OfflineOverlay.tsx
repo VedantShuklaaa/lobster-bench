@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useLive } from "@/lib/live/store";
 
 /** Shown when the server cannot be reached. The page never makes up numbers to fill the gap. */
@@ -24,9 +25,9 @@ export function OfflineOverlay() {
               This page shows a real order book running on a server, so there is nothing to show while it is down. Nothing here is
               simulated in your browser. Retrying{attempt > 1 ? ` (attempt ${attempt})` : ""}…
             </p>
-            <a href="/#evolution" className="mt-4 inline-block text-sm text-white underline underline-offset-4">
+            <Link href="/#evolution" className="mt-4 inline-block text-sm text-white underline underline-offset-4">
               See the recorded benchmarks instead
-            </a>
+            </Link>
           </div>
         </motion.div>
       )}

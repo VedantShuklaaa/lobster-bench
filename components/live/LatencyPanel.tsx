@@ -1,8 +1,8 @@
 "use client";
 
+import { Panel } from "@/components/live/Panel";
 import { fmtMs, fmtNs } from "@/lib/live/format";
 import { useLive } from "@/lib/live/store";
-import { Panel } from "./Panel";
 
 function Spark({ values }: { values: number[] }) {
   if (values.length < 2) return <span className="h-6 w-20" />;
@@ -24,7 +24,7 @@ function Row({ label, hint, value, extra }: { label: string; hint: string; value
       </div>
       <div className="flex items-center gap-3">
         {extra}
-        <span className="tabular font-mono text-sm">{value}</span>
+        <span className="tabular whitespace-nowrap font-mono text-sm">{value}</span>
       </div>
     </div>
   );

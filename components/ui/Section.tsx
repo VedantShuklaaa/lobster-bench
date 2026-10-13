@@ -19,8 +19,8 @@ export function Section({ id, index, eyebrow, title, lead, children }: SectionPr
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/50">
             {index} / {eyebrow}
           </p>
-          <h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight md:text-5xl">{title}</h2>
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-white/60">{lead}</p>
+          <h2 className="mt-4 max-w-2xl text-3xl font-semibold font-[times] md:text-5xl">{title}</h2>
+          <p className="mt-5 max-w-xl text-base leading-[1.2] text-white/60">{lead}</p>
         </Reveal>
         <div className="mt-14">{children}</div>
       </div>
