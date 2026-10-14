@@ -30,7 +30,7 @@ export function Segmented<T extends string>({ id, label, options, value, onChang
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={`relative rounded-full px-4 py-1.5 font-mono text-xs transition-colors ${
+            className={`relative rounded-full px-4 py-1.5 font-mono text-xs transition-colors cursor-pointer ${
               active ? "text-black" : "text-white/60 hover:text-white"
             }`}
           >
