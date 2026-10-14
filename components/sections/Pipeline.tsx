@@ -7,6 +7,7 @@ import { Section } from "@/components/ui/Section";
 import { Segmented } from "@/components/ui/Segmented";
 import { fmtNs } from "@/lib/format";
 import { headlineLatency, results, type LatencyRow } from "@/lib/results";
+import BorderBeam from "border-beam";
 
 type Mode = "pinned" | "unpinned";
 
@@ -31,7 +32,7 @@ const TICKS = [
 
 function Saturated({ row }: { row: LatencyRow }) {
   return (
-    <div className="rounded-2xl border border-white/20 p-8">
+    <div className="rounded-2xl p-8">
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/50">Saturated</p>
       <p className="mt-4 text-2xl font-semibold tracking-tight">
         Offered {row.offered} M/s, achieved {row.achieved.toFixed(1)} M/s.
@@ -46,7 +47,7 @@ function Saturated({ row }: { row: LatencyRow }) {
 
 function Percentiles({ row }: { row: LatencyRow }) {
   return (
-    <div className="rounded-2xl border border-white/20 p-6 md:p-8">
+    <div className="rounded-2xl p-6 md:p-8">
       <div className="space-y-5">
         {PERCENTILES.map((p, i) => {
           const v = row[p.key];
@@ -116,11 +117,10 @@ export function Pipeline() {
                 role="radio"
                 aria-checked={active}
                 onClick={() => setOffered(r.offered)}
-                className={`relative rounded-full border px-3 py-1.5 font-mono text-xs transition-colors ${
-                  active
-                    ? "border-white bg-white text-black"
-                    : "border-white/20 text-white/60 hover:border-white/60 hover:text-white"
-                }`}
+                className={`relative rounded-full border px-3 py-1.5 font-mono text-xs transition-colors cursor-pointer ${active
+                  ? "border-white bg-white text-black"
+                  : "border-white/20 text-white/60 hover:border-white/60 hover:text-white"
+                  }`}
               >
                 {r.offered} M/s{r.saturated ? "*" : ""}
               </button>
@@ -130,15 +130,17 @@ export function Pipeline() {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div
-          key={`${mode}-${row.offered}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-        >
-          {row.saturated ? <Saturated row={row} /> : <Percentiles row={row} />}
-        </motion.div>
+        <BorderBeam>
+          <motion.div
+            key={`${mode}-${row.offered}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            {row.saturated ? <Saturated row={row} /> : <Percentiles row={row} />}
+          </motion.div>
+        </BorderBeam>
       </AnimatePresence>
 
       <div className="mt-10 grid gap-8 text-sm leading-relaxed text-white/60 md:grid-cols-2">

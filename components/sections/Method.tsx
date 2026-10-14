@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { results } from "@/lib/results";
+import BorderBeam from "border-beam";
 
 export function Method() {
   const [open, setOpen] = useState(false);
@@ -20,13 +21,13 @@ export function Method() {
       <div className="grid gap-6 md:grid-cols-2">
         {results.environments.map((e, i) => (
           <Reveal key={e.id} delay={i * 0.08}>
-            <div className="h-full rounded-2xl border border-white/15 p-6 transition-colors hover:border-white/40">
+            <BorderBeam className="h-full rounded-2xl border border-black p-6 transition-colors hover:border-white/15 cursor-pointer duration-300" color="Mono">
               <p className="text-lg font-semibold tracking-tight">{e.name}</p>
               <p className="mt-2 text-sm leading-relaxed text-white/60">{e.detail}</p>
               <p className="mt-5 font-mono text-xs uppercase tracking-[0.15em] text-white/40">Used for</p>
               <p className="mt-1 text-sm">{e.usedFor}</p>
               <p className="mt-4 text-sm leading-relaxed text-white/50">{e.caveat}</p>
-            </div>
+            </BorderBeam>
           </Reveal>
         ))}
       </div>
