@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { epicPro, times } from "@/fonts/fonts";
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
   title: "lobster: a limit order book engine in Rust",
@@ -15,7 +16,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${epicPro.className} ${times.className}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
