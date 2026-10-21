@@ -2,6 +2,10 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { epicPro, times } from "@/fonts/fonts";
 import { Analytics } from "@vercel/analytics/next"
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "lobster: a limit order book engine in Rust",
@@ -15,7 +19,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${epicPro.className} ${times.className}`}>
+    <html lang="en" className={cn(epicPro.className, times.className, "font-sans", geist.variable)}>
       <body>
         {children}
         <Analytics />
