@@ -9,19 +9,36 @@ import { Panel } from "./Panel";
 const W = 1000;
 const H = 400;
 const GRID = 4;
+const X_LABELS = [0.1, 0.3, 0.5, 0.7, 0.9];
 
-/** Each candle aggregates this many ms of 250 ms mid-price samples. */
-const BUCKET_MS = 5_000;
-/** Candle slots across the chart (same visible window as the old line chart). */
-const MAX_CANDLES = Math.ceil((CHART_POINTS * 250) / BUCKET_MS) + 1;
+/** Everything the store keeps: samples × 250 ms. */
+const WINDOW_MS = CHART_POINTS * 250;
+
+/** Candle size (top toolbar). */
+const INTERVALS = [
+  { label: "1s", ms: 1_000 },
+  { label: "5s", ms: 5_000 },
+  { label: "15s", ms: 15_000 },
+  { label: "30s", ms: 30_000 },
+] as const;
+
+/** Visible window (bottom bar). "All" = whatever the store holds. */
+const RANGES = [
+  { label: "30s", ms: 30_000 },
+  { label: "1m", ms: 60_000 },
+  { label: "All", ms: WINDOW_MS },
+] as const;
+
+/** A candle needs at least this many slots in the window to look like a chart. */
+const MIN_CANDLES = 4;
 
 type Candle = { t: number; o: number; h: number; l: number; c: number };
 
-/** Fold the mid-price samples into OHLC candles. */
-function toCandles(series: { t: number; mid: number }[]): Candle[] {
+/** Fold the mid-price samples into OHLC candles of `bucketMs`. */
+function toCandles(series: { t: number; mid: number }[], bucketMs: number, max: number): Candle[] {
   const out: Candle[] = [];
   for (const { t, mid } of series) {
-    const bucket = Math.floor(t / BUCKET_MS) * BUCKET_MS;
+    const bucket = Math.floor(t / bucketMs) * bucketMs;
     const cur = out[out.length - 1];
     if (cur && cur.t === bucket) {
       if (mid > cur.h) cur.h = mid;
@@ -31,16 +48,25 @@ function toCandles(series: { t: number; mid: number }[]): Candle[] {
       out.push({ t: bucket, o: mid, h: mid, l: mid, c: mid });
     }
   }
-  return out.slice(-MAX_CANDLES);
+  return out.slice(-max);
 }
 
-/** Candlestick chart of the mid price, built in the browser from the book feed. */
+const btn = "rounded-md px-2 py-1 transition-colors";
+const on = "bg-white/10 font-semibold text-white";
+const off = "text-white/40 hover:text-white/70";
+
 export function PriceChart() {
   const series = useLive((s) => s.series);
-  const last = useLive((s) => s.last);
   const [hover, setHover] = useState<number | null>(null);
+  const [bucketMs, setBucketMs] = useState<number>(5_000);
+  const [rangeMs, setRangeMs] = useState<number>(WINDOW_MS);
 
-  const candles = useMemo(() => (series.length >= 2 ? toCandles(series) : []), [series]);
+  const maxCandles = Math.ceil(rangeMs / bucketMs) + 1;
+
+  const candles = useMemo(
+    () => (series.length >= 2 ? toCandles(series, bucketMs, maxCandles) : []),
+    [series, bucketMs, maxCandles],
+  );
   const m = candles.length;
 
   const view = useMemo(() => {
@@ -55,28 +81,93 @@ export function PriceChart() {
     const pad = span * 0.15;
     lo = (lo + hi) / 2 - span / 2 - pad;
     hi = lo + span + pad * 2;
-    const slot = W / MAX_CANDLES;
-    // newest candle sits at the right edge, history slides left
-    const x = (i: number) => (i + MAX_CANDLES - m + 0.5) * slot;
+    const slot = W / maxCandles;
+    const x = (i: number) => (i + maxCandles - m + 0.5) * slot;
     const y = (v: number) => H - ((v - lo) / (hi - lo)) * H;
     return { lo, hi, x, y, bodyW: slot * 0.6 };
-  }, [candles, m]);
+  }, [candles, m, maxCandles]);
+
+  const pickRange = (ms: number) => {
+    setRangeMs(ms);
+    // keep the candle size valid for the new window
+    if (ms / bucketMs < MIN_CANDLES) {
+      const fit = [...INTERVALS].reverse().find((i) => ms / i.ms >= MIN_CANDLES);
+      if (fit) setBucketMs(fit.ms);
+    }
+  };
 
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     const f = (e.clientX - r.left) / r.width;
-    const i = Math.floor(f * MAX_CANDLES) - (MAX_CANDLES - m);
+    const i = Math.floor(f * maxCandles) - (maxCandles - m);
     setHover(i >= 0 && i < m ? i : null);
   };
 
   const lastCandle = m ? candles[m - 1] : null;
+  const prevClose = m > 1 ? candles[m - 2].c : lastCandle?.o ?? 0;
+  const change = lastCandle ? lastCandle.c - prevClose : 0;
+  const changePct = prevClose ? (change / prevClose) * 100 : 0;
+  const up = change >= 0;
+  const dirColor = up ? "var(--color-up)" : "var(--color-down)";
   const lastColor = lastCandle && lastCandle.c < lastCandle.o ? "var(--color-down)" : "var(--color-up)";
   const hc = hover != null ? candles[hover] : null;
+  const intervalLabel = INTERVALS.find((i) => i.ms === bucketMs)?.label ?? "";
 
   return (
-    <Panel title="Mid price" right={`${BUCKET_MS / 1000} s candles`} className="h-full">
+    <Panel title="Mid price" right={`${intervalLabel} candles`} className="h-full">
+      {/* (a) toolbar: candle interval */}
+      <div className="flex items-center gap-1 px-3 pt-3 text-[11px]">
+        {INTERVALS.map((i) => {
+          const disabled = rangeMs / i.ms < MIN_CANDLES;
+          return (
+            <button
+              key={i.label}
+              type="button"
+              disabled={disabled}
+              onClick={() => setBucketMs(i.ms)}
+              className={`${btn} ${bucketMs === i.ms ? on : off} disabled:cursor-not-allowed disabled:opacity-30`}
+            >
+              {i.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* (b) symbol row + OHLC of the newest candle */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pb-2 pt-2">
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="font-semibold text-white">LOB/USD</span>
+          <span className="text-white/30">·</span>
+          <span className="text-white/40">{intervalLabel}</span>
+          {lastCandle && (
+            <span className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-[color:var(--color-up)]/15 px-2 py-[3px]">
+              <span className="size-1.5 rounded-full bg-[color:var(--color-up)]" />
+              <span className="text-[9px] font-semibold tracking-[0.14em] text-[color:var(--color-up)]">LIVE</span>
+            </span>
+          )}
+        </div>
+        {lastCandle && (
+          <div className="tabular flex items-center gap-1.5 whitespace-nowrap font-mono text-[10.5px]">
+            <span className="text-white/40">O</span>
+            <span className="text-white/70">{fmtPrice(lastCandle.o)}</span>
+            <span className="text-white/40">H</span>
+            <span className="text-white/70">{fmtPrice(lastCandle.h)}</span>
+            <span className="text-white/40">L</span>
+            <span className="text-white/70">{fmtPrice(lastCandle.l)}</span>
+            <span className="text-white/40">C</span>
+            <span className="font-medium text-white">{fmtPrice(lastCandle.c)}</span>
+            <span className="ml-1" style={{ color: dirColor }}>
+              {up ? "+" : ""}
+              {fmtPrice(change)} ({up ? "+" : ""}
+              {changePct.toFixed(2)}%)
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* (c) candlestick chart */}
       <div
-        className="relative h-[260px] touch-pan-y select-none sm:h-[300px]"
+        className="relative h-[240px] touch-pan-y select-none sm:h-[280px]"
         onPointerMove={onMove}
         onPointerLeave={() => setHover(null)}
       >
@@ -94,6 +185,18 @@ export function PriceChart() {
                   y2={(H / GRID) * i}
                   stroke="white"
                   strokeOpacity="0.07"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+              {X_LABELS.map((f) => (
+                <line
+                  key={f}
+                  x1={f * W}
+                  x2={f * W}
+                  y1="0"
+                  y2={H}
+                  stroke="white"
+                  strokeOpacity="0.04"
                   vectorEffect="non-scaling-stroke"
                 />
               ))}
@@ -130,7 +233,6 @@ export function PriceChart() {
                 );
               })}
 
-              {/* last price line */}
               <line
                 x1="0"
                 x2={W}
@@ -154,8 +256,8 @@ export function PriceChart() {
             ))}
 
             <span
-              className="tabular pointer-events-none absolute left-2 -translate-y-1/2 rounded-sm bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-black"
-              style={{ top: `${(view.y(lastCandle.c) / H) * 100}%` }}
+              className="tabular pointer-events-none absolute left-2 -translate-y-1/2 rounded-sm px-1.5 py-0.5 font-mono text-[10px] font-semibold text-black"
+              style={{ top: `${(view.y(lastCandle.c) / H) * 100}%`, background: lastColor }}
             >
               {fmtPrice(lastCandle.c)}
             </span>
@@ -181,10 +283,42 @@ export function PriceChart() {
           </>
         )}
       </div>
-      <div className="flex justify-between border-t border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-white/35">
-        <span>−{Math.round(((CHART_POINTS * 0.25) / 60) * 10) / 10} min</span>
-        <span>Last trade {last != null ? fmtPrice(last) : "–"}</span>
-        <span>now</span>
+
+      {/* (d) x-axis time labels, from the candle under each gridline */}
+      <div className="relative h-5">
+        {view &&
+          X_LABELS.map((f) => {
+            const idx = Math.floor(f * maxCandles) - (maxCandles - m);
+            if (idx < 0 || idx >= m) return null;
+            return (
+              <span
+                key={f}
+                style={{ left: `${f * 100}%` }}
+                className="absolute top-0.5 -translate-x-1/2 font-mono text-[10px] text-white/35"
+              >
+                {fmtClock(candles[idx].t)}
+              </span>
+            );
+          })}
+      </div>
+
+      {/* (e) footer: visible window */}
+      <div className="flex items-center justify-between border-t border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.12em]">
+        <div className="flex items-center gap-1">
+          {RANGES.map((r) => (
+            <button
+              key={r.label}
+              type="button"
+              onClick={() => pickRange(r.ms)}
+              className={`${btn} ${rangeMs === r.ms ? on : off}`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-white/35">
+          {m} candles · {Math.round(((m * bucketMs) / 1000) * 10) / 10} s
+        </span>
       </div>
     </Panel>
   );
